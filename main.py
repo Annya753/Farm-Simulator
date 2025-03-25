@@ -10,7 +10,7 @@ def main():
     clock = pygame.time.Clock()
 
     images = {
-        "background": pygame.image.load("background.png"),
+        "background": pygame.image.load(r"C:\Users\belug\PycharmProjects\PythonProjectOursimulator\Farm-Simulator\background.png"),
         "wheat": pygame.image.load("wheat.png"),
      #  "cabbage": pygame.image.load("cabbage.png"),
         "cow": pygame.image.load("cow.png"),
