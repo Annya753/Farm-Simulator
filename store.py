@@ -4,10 +4,10 @@ from models import Animal, Plant
 class Store:
     def __init__(self, images):
         self.items = [
-            Plant("Пшеница", 3, 50, 100, images["wheat"]),
+            Plant("Пшеница", 3, 50, 100),
             # Plant("Капуста", 5, 80, 160),
-            Animal("Корова", 500, "молоко", 50, images["cow"]),
-            Animal("Курица", 100, "яйца", 10, images["chicken"])
+            Animal("Корова", 500, "молоко", 50),
+            Animal("Курица", 100, "яйца", 10)
         ]
 
     # def buy_animal(self, farmer, animal_name):

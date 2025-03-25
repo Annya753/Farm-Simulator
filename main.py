@@ -11,11 +11,11 @@ def main():
 
     images = {
         "background": pygame.image.load(r"C:\Users\belug\PycharmProjects\PythonProjectOursimulator\Farm-Simulator\background.png"),
-        "wheat": pygame.image.load("wheat.png"),
+        "wheat": pygame.image.load(r"C:\Users\belug\PycharmProjects\PythonProjectOursimulator\Farm-Simulator\wheat.png"),
      #  "cabbage": pygame.image.load("cabbage.png"),
-        "cow": pygame.image.load("cow.png"),
-        "chicken": pygame.image.load("chicken.png"),
-        "farmer": pygame.image.load("farmer.png")
+        "cow": pygame.image.load(r"C:\Users\belug\PycharmProjects\PythonProjectOursimulator\Farm-Simulator\cow.png"),
+        "chicken": pygame.image.load(r"C:\Users\belug\PycharmProjects\PythonProjectOursimulator\Farm-Simulator\chicken.png"),
+        "farmer": pygame.image.load(r"C:\Users\belug\PycharmProjects\PythonProjectOursimulator\Farm-Simulator\farmer.png")
     }
 
     farmer = Farmer("Игрок 1", 50, 50)
