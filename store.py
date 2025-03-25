@@ -2,12 +2,12 @@ from models import Animal, Plant
 
 
 class Store:
-    def __init__(self):
+    def __init__(self, images):
         self.items = [
-            Plant("Пшеница", 3, 50, 100),
-            Plant("Капуста", 5, 80, 160),
-            Animal("Корова", 500, "молоко", 50),
-            Animal("Курица", 100, "яйца", 10)
+            Plant("Пшеница", 3, 50, 100, images["wheat"]),
+            # Plant("Капуста", 5, 80, 160),
+            Animal("Корова", 500, "молоко", 50, images["cow"]),
+            Animal("Курица", 100, "яйца", 10, images["chicken"])
         ]
 
     # def buy_animal(self, farmer, animal_name):
@@ -33,3 +33,4 @@ class Store:
                     print(f"{farmer.name} купил {item.name}")
                     return
         print("Элемент не найден!")
+

@@ -1,10 +1,12 @@
 class Farmer:
-    def __init__(self, name):
+    def __init__(self, name, x, y):
         self.name = name
         self.money = 1000
         self.animals = []
         self.plants = []
-
+        self.x = x
+        self.y = y
+        self.speed = 5
     # def buy_animal(self, animal):
     #     if self.money >= animal.price:
     #         self.animals.append(animal)
@@ -20,12 +22,19 @@ class Farmer:
     #         print(f"{self.name} посадил {plant.name}")
     #     else:
     #         print("Недостаточно денег!")
+    def move(self, dx, dy):
+        self.x += dx * self.speed
+        self.y += dy * self.speed
 
     def add_item(self, item):
         if type(item) is Animal:
             self.animals.append(item)
         if type(item) is Plant:
             self.plants.append(item)
+
+    def feed_animals(self):
+        for animal in self.animals:
+            animal.feed()
 
     def collect_harvest(self):
         earnings = 0
@@ -62,8 +71,6 @@ class Plant:
             print(f"{self.name} продан за {self.sell_price}!")
             return self.sell_price
         return 0
-
-
 
 
 
