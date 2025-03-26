@@ -1,6 +1,7 @@
 import time
 import threading
 
+
 class TimeManager:
     def __init__(self):
         self.day = 1
@@ -10,12 +11,12 @@ class TimeManager:
     def timer_increment(self, interval, callback):
         def timer_thread():
             print(f"Таймер запущен на {interval} секунд...")
-            time.sleep(interval)  # Ждем указанное количество секунд
+            time.sleep(interval)
             print("Таймер истек!")
-            callback()  # Вызываем функцию после завершения таймера
+            callback()
             self.timer_active = False  # Разрешаем запуск следующего таймера
 
-        if not self.timer_active:  # Не запускаем новый таймер, если старый еще идет
+        if not self.timer_active:
             self.timer_active = True
             thread = threading.Thread(target=timer_thread, daemon=True)
             thread.start()
@@ -23,6 +24,7 @@ class TimeManager:
     def toggle_dayflag(self):
         self.dayflag = not self.dayflag
         print(f"Флаг дня изменён: {self.dayflag}")
+
 
     def advance_time(self, farmer, dayflag):
         def on_timer_end():

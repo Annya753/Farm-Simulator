@@ -8,7 +8,6 @@ def main():
     screen = pygame.display.set_mode((800, 800))
     pygame.display.set_caption("Симулятор фермы")
     clock = pygame.time.Clock()
-    font = pygame.font.Font(None, 36)
 
     images = {
         "background1": pygame.image.load(r"C:\Users\belug\PycharmProjects\PythonProjectOursimulator\Farm-Simulator\background1.png"),
@@ -37,10 +36,23 @@ def main():
             screen.blit(plant.image, (plant.x, plant.y))
         for animal in farmer.animals:
             screen.blit(animal.image, (animal.x, animal.y))
-        print(f"🎮 Текущие животные на ферме: {[a.name for a in farmer.animals]}")
 
-        balance_text = font.render(f"Баланс: {farmer.money}", True, (0, 0, 0))
+        font = pygame.font.Font(None, 36)
+        balance_text = font.render(f"Баланс: {farmer.money} | День: {time_manager.day}", True, (255, 255, 255))
         screen.blit(balance_text, (10, 10))
+
+        status_font = pygame.font.Font(None, 24)
+        time_of_day = "День" if time_manager.dayflag else "Ночь"
+        day_time_text = status_font.render(f"{time_of_day}", True, (255, 255, 255))
+        screen.blit(day_time_text, (10, 40))
+
+        for i, animal in enumerate(farmer.animals):
+            animal_status = "Накормлена" if not animal.hungry else "Голодна"
+            status_text = status_font.render(f"{animal.name}: {animal_status}", True, (255, 255, 255))
+            screen.blit(status_text, (10, 70 + 30 * i))
+
+        if show_store:
+            store.draw(screen)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -48,6 +60,13 @@ def main():
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_b and store_zone.collidepoint(farmer.x, farmer.y):
                     show_store = not show_store
+                elif event.key == pygame.K_f:
+                    # Проверяем, есть ли животные рядом с фермером, чтобы покормить
+                    for animal in farmer.animals:
+                        if abs(farmer.x - animal.x) < 50 and abs(farmer.y - animal.y) < 50:
+                            animal.feed()
+                            break
+
             elif event.type == pygame.MOUSEBUTTONDOWN and show_store:
                 store.handle_click(event.pos, farmer)
 
@@ -61,8 +80,8 @@ def main():
         if keys[pygame.K_RIGHT]:
             farmer.move(1, 0)
 
-        if show_store:
-            store.draw(screen)
+        if show_store and not store_zone.collidepoint(farmer.x, farmer.y):
+            show_store = False
 
         time_manager.advance_time(farmer, time_manager.dayflag)
         pygame.display.flip()
