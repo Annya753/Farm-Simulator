@@ -5,7 +5,7 @@ import threading
 class TimeManager:
     def __init__(self):
         self.day = 1
-        self.timer_active = False  # Флаг, чтобы предотвратить повторные таймеры
+        self.timer_active = False
         self.dayflag = True
 
     def timer_increment(self, interval, callback):
@@ -25,18 +25,24 @@ class TimeManager:
         self.dayflag = not self.dayflag
         print(f"Флаг дня изменён: {self.dayflag}")
 
-
-    def advance_time(self, farmer, dayflag):
+    def advance_time(self, farmer):
         def on_timer_end():
-            if (dayflag == False):
+            self.dayflag = not self.dayflag
+
+            if self.dayflag:
                 self.day += 1
-            else: self.day += 0
-            self.toggle_dayflag()  # Меняем фон
-            print(f"Наступил день {self.day}")
+                print(f"Наступил день {self.day}")
 
             for plant in farmer.plants:
                 plant.grow()
+
             for animal in farmer.animals:
+                animal.update()
                 animal.hungry = True
 
-        self.timer_increment(60, on_timer_end)  # Запускаем таймер на 60 секунд
+            # Проверяем производство
+            production_messages = farmer.check_production()
+            for msg in production_messages:
+                print(msg)
+
+        self.timer_increment(30, on_timer_end)
