@@ -62,18 +62,16 @@ class Store:
         return lines
 
     def draw(self, screen, farmer_money):
-        """Отрисовка магазина"""
-        # Затемнение фона
         s = pygame.Surface((800, 800), pygame.SRCALPHA)
         s.fill((0, 0, 0, 150))
         screen.blit(s, (0, 0))
 
-        # Основное окно магазина
-        main_rect = pygame.Rect(170, 100, 520, 570)  # Увеличенные размеры
+
+        main_rect = pygame.Rect(170, 100, 520, 570)
         pygame.draw.rect(screen, (245, 235, 220), main_rect, border_radius=15)
         pygame.draw.rect(screen, (180, 150, 100), main_rect, 3, border_radius=15)
 
-        # Заголовок
+
         title = self.title_font.render("ФЕРМЕРСКИЙ МАГАЗИН", True, (90, 60, 30))
         screen.blit(title, (400 - title.get_width() // 2 + 10, 135))
 
@@ -93,8 +91,8 @@ class Store:
     def _draw_item(self, screen, index, item_data, farmer_money, mouse_pos):
         """Отрисовка карточки товара"""
         item = item_data["item"]
-        rect = pygame.Rect(200, 190 + index * 160, 430, 150)  # Увеличенные размеры
-        item_data["rect"] = rect  # Сохраняем rect для обработки кликов
+        rect = pygame.Rect(200, 190 + index * 160, 430, 150)
+        item_data["rect"] = rect
         can_afford = farmer_money >= item.price
         is_available = item_data["quantity"] > 0
         hover = rect.collidepoint(mouse_pos) and is_available
@@ -137,7 +135,7 @@ class Store:
 
         # Описание
         desc_lines = self._wrap_text(item_data['description'], self.desc_font, 340)
-        for i, line in enumerate(desc_lines[:2]):  # Не более 2 строк
+        for i, line in enumerate(desc_lines[:2]):
             screen.blit(
                 self.desc_font.render(line, True, (90, 80, 70)),
                 (text_x, text_y + 80 + i * 20)
@@ -161,7 +159,7 @@ class Store:
 
         # Проверка кнопки закрытия
         if self.close_btn_rect.collidepoint(pos):
-            return False  # Сигнал к закрытию
+            return False
 
         # Обработка клика по товарам
         for item_data in self.items:

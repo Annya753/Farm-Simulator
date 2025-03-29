@@ -14,7 +14,7 @@ class TimeManager:
             time.sleep(interval)
             print("Таймер истек!")
             callback()
-            self.timer_active = False  # Разрешаем запуск следующего таймера
+            self.timer_active = False
 
         if not self.timer_active:
             self.timer_active = True
@@ -28,14 +28,12 @@ class TimeManager:
     def advance_time(self, farmer):
         def on_timer_end():
             self.dayflag = not self.dayflag
-
             if self.dayflag:
                 self.day += 1
                 print(f"Наступил день {self.day}")
 
             for plant in farmer.plants:
                 plant.grow()
-
             for animal in farmer.animals:
                 animal.update()
                 animal.hungry = True

@@ -78,6 +78,7 @@ def main():
         screen.blit(status_font.render(f"Коровы: {cow_status}", True, (255, 255, 255)), (10, 100))
         screen.blit(status_font.render(f"Яиц: {farmer.eggs}", True, (255, 255, 255)), (10, 130))
         screen.blit(status_font.render(f"Молока: {farmer.milk}", True, (255, 255, 255)), (10, 160))
+        screen.blit(status_font.render(f"Пшеницы: {farmer.wheat}", True, (255, 255, 255)), (10, 190))
 
         if show_store:
             store.draw(screen, farmer.money)
@@ -99,20 +100,41 @@ def main():
                         collection_result = farmer.collect_all_products()
                         status_messages = collection_result
                     message_timer = MESSAGE_DURATION
-                elif event.key == pygame.K_p:
-                    if farmer.eggs == 0 and farmer.milk == 0:
-                        status_messages = ["Нет продукции для продажи"]
-                    else:
-                        old_money = farmer.money
-                        status_messages = farmer.sell_products()
-                        status_messages.append(f"Баланс: {old_money} → {farmer.money}")
-                    message_timer = MESSAGE_DURATION
                 elif event.key == pygame.K_c:
                     status_messages = [farmer.feed_all_chickens()]
                     message_timer = MESSAGE_DURATION
                 elif event.key == pygame.K_v:
                     status_messages = [farmer.feed_all_cows()]
                     message_timer = MESSAGE_DURATION
+                elif event.key == pygame.K_w:  # Полить растение
+                    if farmer.plants:
+                        status_messages = [farmer.water_plant(0)]
+                    else:
+                        status_messages = ["Нет растений для полива"]
+                    message_timer = MESSAGE_DURATION
+                elif event.key == pygame.K_h:  # Собрать урожай
+                    if farmer.plants:
+                        for i, plant in enumerate(farmer.plants[:]):
+                            if plant.is_ripe():
+                                status_messages = [farmer.harvest_plant(i)]
+                                break
+                        else:
+                            status_messages = ["Нет созревших растений"]
+                    else:
+                        status_messages = ["Нет растений"]
+                    message_timer = MESSAGE_DURATION
+                elif event.key == pygame.K_s:  # статус растений
+                    status_messages = farmer.check_plants_status()
+                    message_timer = MESSAGE_DURATION
+                elif event.key == pygame.K_p:  # Продажа ВСЕХ продуктов
+                    if farmer.eggs == 0 and farmer.milk == 0 and farmer.wheat == 0:
+                        status_messages = ["Нет продукции для продажи"]
+                    else:
+                        old_money = farmer.money
+                        status_messages = farmer.sell_products()
+                        status_messages.append(f"Баланс: {old_money} → {farmer.money}")
+                    message_timer = MESSAGE_DURATION
+
             elif event.type == pygame.MOUSEBUTTONDOWN and show_store:
                 result = store.handle_click(event.pos, farmer)
                 if result is False:

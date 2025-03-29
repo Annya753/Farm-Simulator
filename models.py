@@ -1,5 +1,7 @@
 from random import random, randint
 
+from pyexpat.errors import messages
+
 
 class Farmer:
     def __init__(self, name, x, y):
@@ -13,21 +15,9 @@ class Farmer:
         self.speed = 5
         self.eggs = 0
         self.milk = 0
-    # def buy_animal(self, animal):
-    #     if self.money >= animal.price:
-    #         self.animals.append(animal)
-    #         self.money -= animal.price
-    #         print(f"{self.name} купил {animal.name}")
-    #     else:
-    #         print("Недостаточно денег!")
-    #
-    # def buy_plant(self, plant):
-    #     if self.money >= plant.price:
-    #         self.plants.append(plant)
-    #         self.money -= plant.price
-    #         print(f"{self.name} посадил {plant.name}")
-    #     else:
-    #         print("Недостаточно денег!")
+        self.wheat = 0
+
+
     def move(self, dx, dy):
         self.x += dx * self.speed
         self.y += dy * self.speed
@@ -55,7 +45,7 @@ class Farmer:
         return f"Накормлено коров: {fed_count}"
 
     def collect_all_products(self):
-        """Собирает продукцию, но не начисляет деньги (только добавляет в инвентарь)"""
+        """Собирает продукцию"""
         messages = []
         collected_eggs = 0
         collected_milk = 0
@@ -80,23 +70,23 @@ class Farmer:
         return messages
 
     def sell_products(self):
-        if self.eggs == 0 and self.milk == 0:
+        if self.eggs == 0 and self.milk == 0 and self.wheat == 0:
             return ["Нет продукции для продажи"]
 
         egg_price = 10
         milk_price = 50
+        wheat_price = 100
 
-        total = (self.eggs * egg_price) + (self.milk * milk_price)
-        sold_info = [
-            f"Продано: {self.eggs} яиц и {self.milk} молока",
-            f"Выручка: {total} денег"
-        ]
+        total = (self.eggs * egg_price) + (self.milk * milk_price) +  (self.wheat * wheat_price)
+        sold_items = [f"Продано: {self.eggs} яиц, {self.milk} молока, {self.wheat} пшеницы",
+        f"Выручка: {total} денег"]
 
-        self.money += total
         self.eggs = 0
         self.milk = 0
+        self.wheat = 0
+        self.money += total
 
-        return sold_info
+        return sold_items
 
 
     def check_production(self):
@@ -104,19 +94,48 @@ class Farmer:
         messages = []
         for animal in self.animals:
             if animal.product_count > 0:
-                messages.append(
-                    f"{animal.name} произвела {animal.product_count} {animal.product}!"
-                )
+                messages.append(f"{animal.name} произвела {animal.product_count} {animal.product}!")
         return messages
 
     def plant_seed(self):
+        messages = []
         if self.seeds:
             seed = self.seeds.pop()
             seed.x, seed.y = self.x, self.y
             self.plants.append(seed)
-            print(f"{self.name} посадил {seed.name}!")
+            messages.append(f"{self.name} посадил {seed.name}!")
         else:
-            print("Нет семян для посадки!")
+            messages.append("Нет семян для посадки!")
+        return messages
+
+    def water_plant(self, plant_index):
+        if 0 <= plant_index < len(self.plants):
+            message = self.plants[plant_index].water()
+            return message
+        return "Нет растения с таким индексом"
+
+    def harvest_plant(self, plant_index):
+        if 0 <= plant_index < len(self.plants):
+            plant = self.plants[plant_index]
+            if plant.is_ripe():
+                self.wheat += 1  # Увеличиваем количество пшеницы
+                self.plants.pop(plant_index)
+                return f"Собрана 1 {plant.name} (Всего: {self.wheat})"
+            return f"{plant.name} еще не созрела"
+        return "Нет растения с таким индексом"
+
+    def check_plants_status(self):
+        messages = []
+        for i, plant in enumerate(self.plants):
+            status = f"{i}: {plant.name} - "
+            if plant.is_ripe():
+                status += "Готова к сбору (нажми H)"
+           # else:
+           #     status += f"Стадия {plant.stage}/{len(plant.stages_images) - 1}"
+                if not plant.watered:
+                    status += " (Нужен полив - нажми W)"
+            messages.append(status)
+        return messages if messages else ["Нет растений"]
 
 
 
@@ -132,21 +151,39 @@ class Plant:
         self.image = image
         self.x = x
         self.y = y
+        self.watered = False  # Полито ли растение сегодня
+        self.stage = 0
+    #   self.stages_images = []
 
     def grow(self):
-        self.age += 1
+        if self.watered:
+            self.age += 1
+            self.watered = False  # Сбрасываем статус полива
+            # Обновляем стадию роста
+          # self.stage = min(self.age, len(self.stages_images)-1)
+            return True
+        return False
+
+    def water(self):
+        self.watered = True
+        return f"{self.name} полита!"
 
     def is_ripe(self):
         return self.age >= self.growth_time
+
+    def draw(self, screen):
+        screen.blit(self.image, (self.x, self.y))
+
+   # def draw(self, screen):
+   #     # Рисуем текущую стадию роста
+   #     current_image = self.stages_images[self.stage]
+   #     screen.blit(current_image, (self.x, self.y))
 
     def sell(self):
         if self.is_ripe():
             print(f"{self.name} продан за {self.sell_price}!")
             return self.sell_price
         return 0
-
-    def draw(self, screen):
-        screen.blit(self.image, (self.x, self.y))
 
 
 class Animal:
@@ -168,7 +205,7 @@ class Animal:
     def setup_production(self):
         if self.name.lower() == "курица":
             self.production_cycle = randint(1, 3)  # Дни между кладками
-            self.production_amount = randint(1, 3)  # Количество яиц за кладку
+            self.production_amount = randint(1, 3)
         elif self.name.lower() == "корова":
             self.production_cycle = randint(2, 4)  # Дни между удоями
             self.production_amount = randint(1, 3)
@@ -182,7 +219,7 @@ class Animal:
     def produce(self):
         self.product_count += self.production_amount
         self.production_timer = 0
-        self.setup_production()  # Обновляем цикл для следующего производства
+        self.setup_production()
         self.hungry = True  # После производства животное становится голодным
         print(f"{self.name} произвела {self.product_count} {self.product}!")
 
