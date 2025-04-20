@@ -1,40 +1,32 @@
 import pygame
+import os
 
+asset_path = os.path.join(os.path.dirname(__file__), "assets")
 
 class MessageHandler:
     def __init__(self):
-        self.message = ""
-        self.show_message = False
-        self.message_timer = 0
-        self.FPS = 60
+        self.current_message = None  # Текущее сообщение
+        self.time_remaining = 0  # Время, оставшееся для отображения сообщения
+        self.message_bg = pygame.image.load(os.path.join(asset_path, "message_handler.png"))  # Загружаем картинку для фона
 
-    def set_message(self, text, duration_seconds=2.0):
-        self.message = str(text)
-        self.show_message = True
-        self.message_timer = int(duration_seconds * self.FPS)
+    def add_message(self, message, duration=120):
+        """Добавление нового сообщения, которое заменяет старое."""
+        self.current_message = message
+        self.time_remaining = duration
 
     def update(self):
-        if self.show_message and self.message_timer > 0:
-            self.message_timer -= 1
-            if self.message_timer <= 0:
-                self.show_message = False
+        """Обновление состояния сообщения: уменьшение времени оставшегося для отображения."""
+        if self.current_message:
+            self.time_remaining -= 1
+            if self.time_remaining <= 0:
+                self.current_message = None  # Убираем сообщение после окончания времени
 
-    def draw(self, screen, font):
-        if self.show_message:
-            # Прозрачный фон с желтым текстом
-            text_surface = font.render(self.message, True, (255, 255, 0))  # Желтый цвет
+    def draw(self, screen, font, x_pos, y_pos):
+        """Отрисовка текущего сообщения на экране."""
+        if self.current_message:
+            # Рисуем фон сообщения (картинку)
+            screen.blit(self.message_bg, (200, 480))  # Отображаем картинку в нужной области
 
-            # Создаем полупрозрачную подложку
-            bg_surface = pygame.Surface(
-                (text_surface.get_width() + 20, text_surface.get_height() + 10),
-                pygame.SRCALPHA
-            )
-            bg_surface.fill((0, 0, 0, 150))  # Черный с прозрачностью
-
-            # Позиционирование
-            x_pos = 400 - text_surface.get_width() // 2
-            y_pos = 750 - text_surface.get_height()
-
-            # Рисуем подложку и текст
-            screen.blit(bg_surface, (x_pos - 10, y_pos - 5))
-            screen.blit(text_surface, (x_pos, y_pos))
+            # Отображаем текущее сообщение поверх картинки
+            text_surface = font.render(self.current_message, True, (84, 28, 28))
+            screen.blit(text_surface, (x_pos - text_surface.get_width() // 2, y_pos - text_surface.get_height() // 2))

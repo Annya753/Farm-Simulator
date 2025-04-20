@@ -1,12 +1,10 @@
 from random import random, randint
-
-from pyexpat.errors import messages
-
+import pygame
 
 class Farmer:
     def __init__(self, name, x, y):
         self.name = name
-        self.money = 1000
+        self.money = 100000
         self.animals = []
         self.plants = []
         self.seeds = []
@@ -22,10 +20,13 @@ class Farmer:
         self.x += dx * self.speed
         self.y += dy * self.speed
 
-    def add_item(self, item):
-        if type(item) is Animal:
+    def add_item(self, item, game_map):
+        if isinstance(item, Animal):
+            (x, y), pen_boundaries = game_map.get_spawn_point(item.name)
+            item.x, item.y = x, y
+            item.set_pen_boundaries(pen_boundaries)
             self.animals.append(item)
-        if type(item) is Plant:
+        elif isinstance(item, Plant):
             self.plants.append(item)
 
     def feed_all_chickens(self):
@@ -199,8 +200,15 @@ class Animal:
         self.production_timer = 0
         self.product_count = 0
         self.setup_production()
+        self.direction = [random() * 2 - 1, random() * 2 - 1]  # Случайное направление
+        self.move_timer = 0
+        self.move_cooldown = randint(30, 100)
+        self.speed = 0.5 if name.lower() == "корова" else 1.0
+        self.pen_boundaries = None
 
-
+    def set_pen_boundaries(self, walls):
+        """Устанавливает границы загона для животного (left, top, right, bottom)"""
+        self.pen_boundaries = walls
 
     def setup_production(self):
         if self.name.lower() == "курица":
@@ -210,7 +218,32 @@ class Animal:
             self.production_cycle = randint(2, 4)  # Дни между удоями
             self.production_amount = randint(1, 3)
 
-    def update(self):
+    def update(self, walls):
+        # Движение
+        self.move_timer += 1
+        if self.move_timer >= self.move_cooldown:
+            self.direction = [random() * 2 - 1, random() * 2 - 1]
+            self.move_timer = 0
+            self.move_cooldown = randint(30, 100)
+
+        # Пытаемся двигаться
+        new_x = self.x + self.direction[0] * self.speed
+        new_y = self.y + self.direction[1] * self.speed
+
+        # Проверка коллизий со стенами
+        animal_rect = pygame.Rect(new_x, new_y, self.image.get_width(), self.image.get_height())
+        can_move = True
+
+        for wall in walls:
+            if animal_rect.colliderect(wall.rect):
+                can_move = False
+                self.direction = [random() * 2 - 1, random() * 2 - 1]
+                break
+
+        if can_move:
+            self.x = new_x
+            self.y = new_y
+
         if not self.hungry:
             self.production_timer += 1
             if self.production_timer >= self.production_cycle:

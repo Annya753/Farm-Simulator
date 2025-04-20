@@ -3,8 +3,9 @@ from models import Animal, Plant
 
 
 class Store:
-    def __init__(self, images):
+    def __init__(self, images, font_path="PixelifySans-VariableFont_wght.ttf"):
         self.images = images
+        self.font_path = font_path
         self.items = [
             {
                 "type": "plant",
@@ -16,31 +17,25 @@ class Store:
                 "type": "animal",
                 "item": Animal("Корова", 700, "молоко", 50, images["cow"], 0, 0),
                 "quantity": 3,
-                "description": "Дает молоко. Цена: 50 за шт. Требует кормления."  },
+                "description": "Дает молоко. Цена: 50 за шт. Требует кормления."
+            },
             {
                 "type": "animal",
                 "item": Animal("Курица", 300, "яйца", 10, images["chicken"], 0, 0),
                 "quantity": 10,
-                "description": "Несет яйца. Цена: 10 за шт. Требует кормления."       }
+                "description": "Несет яйца. Цена: 10 за шт. Требует кормления."
+            }
         ]
         self.last_click_time = 0
         self.close_btn_rect = pygame.Rect(640, 122, 30, 30)
-
-        # Инициализация шрифтов
         self._init_fonts()
 
     def _init_fonts(self):
         """Инициализация шрифтов с обработкой ошибок"""
-        try:
-            self.title_font = pygame.font.Font(None, 36)
-            self.item_font = pygame.font.Font(None, 28)
-            self.price_font = pygame.font.Font(None, 26)
-            self.desc_font = pygame.font.Font(None, 22)
-        except:
-            self.title_font = pygame.font.SysFont("arial", 36, bold=True)
-            self.item_font = pygame.font.SysFont("arial", 28)
-            self.price_font = pygame.font.SysFont("arial", 26)
-            self.desc_font = pygame.font.SysFont("arial", 22)
+        self.title_font = pygame.font.Font(self.font_path, 33)
+        self.item_font = pygame.font.Font(self.font_path, 25)
+        self.price_font = pygame.font.Font(self.font_path, 23)
+        self.desc_font = pygame.font.Font(self.font_path, 19)
 
     def _wrap_text(self, text, font, max_width):
         """Перенос текста на несколько строк"""
@@ -62,18 +57,23 @@ class Store:
         return lines
 
     def draw(self, screen, farmer_money):
-        s = pygame.Surface((800, 800), pygame.SRCALPHA)
+        s = pygame.Surface((1200, 654), pygame.SRCALPHA)
         s.fill((0, 0, 0, 150))
         screen.blit(s, (0, 0))
 
+        screen_width, screen_height = screen.get_size()
+        main_width, main_height = 520, 570
+        main_x = (screen_width - main_width) // 2
+        main_y = (screen_height - main_height) // 2
+        main_rect = pygame.Rect(main_x, main_y, main_width, main_height)
 
-        main_rect = pygame.Rect(170, 100, 520, 570)
         pygame.draw.rect(screen, (245, 235, 220), main_rect, border_radius=15)
         pygame.draw.rect(screen, (180, 150, 100), main_rect, 3, border_radius=15)
 
+        self.close_btn_rect = pygame.Rect(main_x + main_width - 40, main_y + 20, 30, 30)
 
         title = self.title_font.render("ФЕРМЕРСКИЙ МАГАЗИН", True, (90, 60, 30))
-        screen.blit(title, (400 - title.get_width() // 2 + 10, 135))
+        screen.blit(title, (main_x + main_width // 2 - title.get_width() // 2, main_y + 35))
 
         # Кнопка закрытия с hover-эффектом
         mouse_pos = pygame.mouse.get_pos()
@@ -82,16 +82,18 @@ class Store:
         pygame.draw.rect(screen, close_color, self.close_btn_rect, border_radius=15)
         pygame.draw.rect(screen, (150, 50, 50), self.close_btn_rect, 2, border_radius=15)
         close_text = self.item_font.render("×", True, (255, 255, 255))
-        screen.blit(close_text, (650, 125))
+        screen.blit(close_text, (self.close_btn_rect.x + 7, self.close_btn_rect.y))
 
         # Отрисовка товаров
         for i, item_data in enumerate(self.items):
-            self._draw_item(screen, i, item_data, farmer_money, mouse_pos)
+            self._draw_item(screen, i, item_data, farmer_money, mouse_pos, main_x, main_y)
 
-    def _draw_item(self, screen, index, item_data, farmer_money, mouse_pos):
+    def _draw_item(self, screen, index, item_data, farmer_money, mouse_pos, main_x, main_y):
         """Отрисовка карточки товара"""
         item = item_data["item"]
-        rect = pygame.Rect(200, 190 + index * 160, 430, 150)
+        rect_x = main_x + 20
+        rect_y = main_y + 90 + index * 160
+        rect = pygame.Rect(rect_x, rect_y, 480, 150)
         item_data["rect"] = rect
         can_afford = farmer_money >= item.price
         is_available = item_data["quantity"] > 0
@@ -149,7 +151,7 @@ class Store:
             buy_text = pygame.font.Font(None, 24).render("КУПИТЬ", True, (255, 255, 255))
             screen.blit(buy_text, (buy_rect.x + 17, buy_rect.y + 7))
 
-    def handle_click(self, pos, farmer):
+    def handle_click(self, pos, farmer, game_map):
         current_time = pygame.time.get_ticks()
 
         # Защита от двойного клика
@@ -173,8 +175,8 @@ class Store:
                     return f"Не хватает {item.price - farmer.money}!"
 
                 # Создаем новый экземпляр
-                new_item = self._create_new_item(item, item_data['type'], farmer)
-                farmer.add_item(new_item)
+                new_item = self._create_new_item(item, item_data['type'])
+                farmer.add_item(new_item, game_map)
                 farmer.money -= item.price
                 item_data['quantity'] -= 1
 
@@ -182,25 +184,15 @@ class Store:
 
         return None
 
-    def _create_new_item(self, item, item_type, farmer):
+    def _create_new_item(self, item, item_type):
         """Создание нового экземпляра товара"""
         if item_type == 'plant':
-            new_item = Plant(
+            return Plant(
                 item.name, item.growth_time, item.price,
                 item.sell_price, item.image, 0, 0
             )
-            x_pos = 100 + len([p for p in farmer.plants if p.name == item.name]) * 60
-            y_pos = 500
         else:
-            new_item = Animal(
+            return Animal(
                 item.name, item.price, item.product,
                 item.product_price, item.image, 0, 0
             )
-            if item.name == "Корова":
-                x_pos = 350 + len([a for a in farmer.animals if a.name == "Корова"]) * 60
-            else:
-                x_pos = 600 + len([a for a in farmer.animals if a.name == "Курица"]) * 60
-            y_pos = 500
-
-        new_item.x, new_item.y = x_pos, y_pos
-        return new_item

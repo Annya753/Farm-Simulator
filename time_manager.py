@@ -35,7 +35,6 @@ class TimeManager:
             for plant in farmer.plants:
                 plant.grow()
             for animal in farmer.animals:
-                animal.update()
                 animal.hungry = True
 
             # Проверяем производство
