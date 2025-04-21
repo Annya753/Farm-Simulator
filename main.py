@@ -141,5 +141,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-# z nen ghjcnj gbwliefhweon23232323hrhthrt
-# уццукцукцукцук
+# fkpaofkapsokdpaskdpsakdposakdpaoskdposakd
