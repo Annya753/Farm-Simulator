@@ -1,10 +1,11 @@
 import pygame
 import os
-from models import Farmer, Plant, Animal
+from models import Farmer
 from store import Store
 from time_manager import TimeManager
 from message_handler import MessageHandler
 from map import Map
+from menu import MainMenu
 
 def main():
     pygame.init()
@@ -14,6 +15,26 @@ def main():
     font_path = "PixelifySans-VariableFont_wght.ttf"
     message_font = pygame.font.Font(font_path, 32)
     status_font = pygame.font.Font(font_path, 19)
+
+    menu = MainMenu(screen, font_path)
+    in_menu = True
+
+    while in_menu:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                return
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                result = menu.handle_click(event.pos)
+                if result == "start":
+                    in_menu = False  # Выходим из меню
+                elif result == "quit":
+                    pygame.quit()
+                    return
+
+        menu.draw()
+        pygame.display.flip()
+        clock.tick(30)
 
     asset_path = os.path.join(os.path.dirname(__file__), "assets")
     images = {"carrot": {

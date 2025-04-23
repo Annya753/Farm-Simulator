@@ -37,4 +37,4 @@ class TimeManager:
             for animal in farmer.animals:
                 animal.next_day()
 
-        self.timer_increment(10, on_timer_end)
+        self.timer_increment(30, on_timer_end)
