@@ -16,10 +16,27 @@ def main():
     status_font = pygame.font.Font(font_path, 19)
 
     asset_path = os.path.join(os.path.dirname(__file__), "assets")
-    images = {
+    images = {"carrot": {
+        0: pygame.image.load(os.path.join(asset_path, "carrot1.png")),
+        1: pygame.image.load(os.path.join(asset_path, "carrot2.png")),
+        2: pygame.image.load(os.path.join(asset_path, "carrot3.png"))
+    },
+        "potato": {
+        0: pygame.image.load(os.path.join(asset_path, "potato1.png")),
+        1: pygame.image.load(os.path.join(asset_path, "potato2.png")),
+        2: pygame.image.load(os.path.join(asset_path, "potato3.png"))
+    },
+        "onion": {
+        0: pygame.image.load(os.path.join(asset_path, "onion1.png")),
+        1: pygame.image.load(os.path.join(asset_path, "onion2.png")),
+        2: pygame.image.load(os.path.join(asset_path, "onion3.png"))
+    },
+        "potato_card": pygame.image.load(os.path.join(asset_path, "potato.png")),
+        "onion_card": pygame.image.load(os.path.join(asset_path, "onion.png")),
+        "carrot_card": pygame.image.load(os.path.join(asset_path, "carrot.png")),
         "background1": pygame.image.load(os.path.join(asset_path, "background1.png")),
         "background2": pygame.image.load(os.path.join(asset_path, "background2.png")),
-        "wheat": pygame.image.load(os.path.join(asset_path, "wheat.png")),
+        "box": pygame.image.load(os.path.join(asset_path, "box.png")),
         "cow": pygame.image.load(os.path.join(asset_path, "cow.png")),
         "chicken": pygame.image.load(os.path.join(asset_path, "chicken.png")),
         "farmer": pygame.transform.scale(
@@ -33,24 +50,18 @@ def main():
     }
 
     farmer = Farmer("Ivan", 250, 240)
-    store = Store(images)
     time_manager = TimeManager()
+    store = Store(images, time_manager)
     message_handler = MessageHandler()
     map = Map(screen, images, message_font, status_font)
 
     store_message = ""
-    MESSAGE_DURATION = 120
+    MESSAGE_DURATION = 30
     store_zone = pygame.Rect(650, 30, 100, 100)
     show_store = False
     running = True
 
     def check_collision(new_x, new_y):
-        for plant in farmer.plants:
-            if pygame.Rect(plant.x, plant.y, 50, 50).colliderect(new_x, new_y, 50, 50):
-                return True
-        for animal in farmer.animals:
-            if pygame.Rect(animal.x, animal.y, 50, 50).colliderect(new_x, new_y, 50, 50):
-                return True
         return False
 
     while running:
@@ -65,43 +76,73 @@ def main():
                     show_store = not show_store
                     store_message = ""
                 elif event.key == pygame.K_f:
-                    if not farmer.animals:
-                        message_handler.add_message("Нет животных для сбора", MESSAGE_DURATION)
-                    else:
-                        messages = farmer.collect_all_products()
-                        message_handler.add_message("\n".join(messages), MESSAGE_DURATION)
+                    messages = farmer.collect_products()
+                    message_handler.add_message("\n".join(messages), MESSAGE_DURATION)
+
                 elif event.key == pygame.K_c:
-                    message_handler.add_message(farmer.feed_all_chickens(), MESSAGE_DURATION)
+                    fed_count = 0
+                    for animal in farmer.animals:
+                        if animal.name.lower() == "курица" and animal.is_near(farmer):
+                            if animal.feed():
+                                fed_count += 1
+                                message_handler.add_message("Курица накормлена", MESSAGE_DURATION)
+                            else:
+                                message_handler.add_message("Курица не голодна", MESSAGE_DURATION)
+                    if fed_count == 0:
+                        message_handler.add_message("Нет голодных кур рядом", MESSAGE_DURATION)
+
+                elif event.key == pygame.K_a:
+                    messages = farmer.check_animals_status()
+                    message_handler.add_message("\n".join(messages), MESSAGE_DURATION)
+
                 elif event.key == pygame.K_v:
-                    message_handler.add_message(farmer.feed_all_cows(), MESSAGE_DURATION)
+                    fed_count = 0
+                    for animal in farmer.animals:
+                        if animal.name.lower() == "корова" and animal.is_near(farmer):
+                            if animal.feed():
+                                fed_count += 1
+                                message_handler.add_message("Корова накормлена", MESSAGE_DURATION)
+                            else:
+                                message_handler.add_message("Корова не голодна", MESSAGE_DURATION)
+                            break
+                    if fed_count == 0:
+                        message_handler.add_message("Нет голодных коров рядом", MESSAGE_DURATION)
+
                 elif event.key == pygame.K_w:
-                    if farmer.plants:
-                        message_handler.add_message(farmer.water_plant(0), MESSAGE_DURATION)
-                    else:
-                        message_handler.add_message("Нет растений для полива", MESSAGE_DURATION)
+                    watered = False
+                    for i, plant in enumerate(farmer.plants):
+                        if plant.is_near(farmer):
+                            message = farmer.water_plant(i)
+                            message_handler.add_message(message, MESSAGE_DURATION)
+                            watered = True
+                            break
+                    if not watered:
+                        message_handler.add_message("Подойдите ближе к растению", MESSAGE_DURATION)
+
                 elif event.key == pygame.K_h:
-                    if farmer.plants:
-                        for i, plant in enumerate(farmer.plants[:]):
-                            if plant.is_ripe():
-                                message_handler.add_message(farmer.harvest_plant(i), MESSAGE_DURATION)
-                                break
-                        else:
-                            message_handler.add_message("Нет созревших растений", MESSAGE_DURATION)
-                    else:
-                        message_handler.add_message("Нет растений", MESSAGE_DURATION)
+                    harvested = False
+                    for i, plant in enumerate(farmer.plants):
+                        if plant.is_near(farmer):
+                            message = farmer.harvest_plant(i)
+                            message_handler.add_message(message, MESSAGE_DURATION)
+                            harvested = True
+                            break
+                    if not harvested:
+                        message_handler.add_message("Нет растений рядом", MESSAGE_DURATION)
+
                 elif event.key == pygame.K_s:
-                    if farmer.plants:
-                        message_handler.add_message("\n".join(farmer.check_plants_status()), MESSAGE_DURATION)
-                    else:
-                        message_handler.add_message("Нет растений", MESSAGE_DURATION)
+                    messages = farmer.check_plants_status()
+                    message_handler.add_message("\n".join(messages), MESSAGE_DURATION)
+
                 elif event.key == pygame.K_p:
-                    if farmer.eggs == 0 and farmer.milk == 0 and farmer.wheat == 0:
-                        message_handler.add_message("Нет продукции для продажи", MESSAGE_DURATION)
+                    if map.box_rect.collidepoint(farmer.x, farmer.y):
+                        total = farmer.sell_products()
+                        if total > 0:
+                            message_handler.add_message(f"Сумма продажи: {total}", MESSAGE_DURATION)
+                        else:
+                            message_handler.add_message("Нет продукции для продажи", MESSAGE_DURATION)
                     else:
-                        old_money = farmer.money
-                        messages = farmer.sell_products()
-                        messages.append(f"Баланс: {old_money} → {farmer.money}")
-                        message_handler.add_message("\n".join(messages), MESSAGE_DURATION)
+                        message_handler.add_message("Идите к ящику для продажи", MESSAGE_DURATION)
 
             elif event.type == pygame.MOUSEBUTTONDOWN and show_store:
                 result = store.handle_click(event.pos, farmer, map)
@@ -141,4 +182,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-# fkpaofkapsokdpaskdpsakdposakdpaoskdposakd

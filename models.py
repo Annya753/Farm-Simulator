@@ -7,14 +7,12 @@ class Farmer:
         self.money = 100000
         self.animals = []
         self.plants = []
-        self.seeds = []
         self.x = x
         self.y = y
         self.speed = 5
         self.eggs = 0
         self.milk = 0
-        self.wheat = 0
-
+        self.harvest = {}
 
     def move(self, dx, dy):
         self.x += dx * self.speed
@@ -29,163 +27,170 @@ class Farmer:
         elif isinstance(item, Plant):
             self.plants.append(item)
 
-    def feed_all_chickens(self):
-        fed_count = 0
-        for animal in self.animals:
-            if animal.name.lower() == "курица":
-                if animal.feed():
-                    fed_count += 1
-        return f"Накормлено кур: {fed_count}"
-
-    def feed_all_cows(self):
-        fed_count = 0
-        for animal in self.animals:
-            if animal.name.lower() == "корова":
-                if animal.feed():
-                    fed_count += 1
-        return f"Накормлено коров: {fed_count}"
-
-    def collect_all_products(self):
-        """Собирает продукцию"""
-        messages = []
-        collected_eggs = 0
-        collected_milk = 0
-
-        for animal in self.animals:
-            if animal.product_count > 0:
-                if animal.product == "яйца":
-                    self.eggs += animal.product_count
-                    collected_eggs += animal.product_count
-                elif animal.product == "молоко":
-                    self.milk += animal.product_count
-                    collected_milk += animal.product_count
-
-                messages.append(f"Собрано: {animal.product_count} {animal.product}")
-                animal.product_count = 0
-
-        if collected_eggs or collected_milk:
-            messages.append(f"Яиц: + {collected_eggs}, молока: + {collected_milk}")
+    def feed_animal(self, animal):
+        if animal.is_near(self):
+            if animal.feed():
+                return f"{animal.name} накормлена"
+            else:
+                return f"{animal.name} не голодна"
         else:
-            messages.append("Нет продукции для сбора")
+            return "Подойдите ближе к животному"
+
+    def collect_products(self):
+        for animal in self.animals:
+            if animal.is_near(self) and animal.product_count > 0:
+                amount = animal.product_count
+                product = animal.product
+                animal.product_count = 0
+                if product == "яйца":
+                    self.eggs += amount
+                elif product == "молоко":
+                    self.milk += amount
+                return [f"Собрано {amount} {product} от {animal.name}"]
+
+        return ["Нет готовой продукции рядом"]
+    def check_animals_status(self):
+        messages = []
+
+        nearest_animal = None
+        for animal in self.animals:
+            if animal.is_near(self):
+                nearest_animal = animal
+                break
+
+        if nearest_animal:
+            status = f"{nearest_animal.name}: "
+            if nearest_animal.hungry:
+                status += "Голодна (C/V)"
+            elif nearest_animal.product_count > 0:
+                status += f"Готова продукция ({nearest_animal.product_count} {nearest_animal.product}) (F)"
+            else:
+                status += "Сыто, продукция в процессе"
+            messages.append(status)
+        elif self.animals:
+            messages.append("Подойдите ближе к животному")
+        else:
+            messages.append("Нет животных на ферме")
+
+        inventory = []
+        if self.eggs:
+            inventory.append(f"яиц: {self.eggs}")
+        if self.milk:
+            inventory.append(f"молока: {self.milk}")
+        if inventory:
+            messages.append("Склад: " + ", ".join(inventory))
 
         return messages
 
     def sell_products(self):
-        if self.eggs == 0 and self.milk == 0 and self.wheat == 0:
-            return ["Нет продукции для продажи"]
+        total = 0
 
-        egg_price = 10
-        milk_price = 50
-        wheat_price = 100
+        if self.eggs > 0:
+            total += self.eggs * 10
+            self.eggs = 0
 
-        total = (self.eggs * egg_price) + (self.milk * milk_price) +  (self.wheat * wheat_price)
-        sold_items = [f"Продано: {self.eggs} яиц, {self.milk} молока, {self.wheat} пшеницы",
-        f"Выручка: {total} денег"]
+        if self.milk > 0:
+            total += self.milk * 50
+            self.milk = 0
 
-        self.eggs = 0
-        self.milk = 0
-        self.wheat = 0
-        self.money += total
+        if self.harvest:
+            for amount in self.harvest.values():
+                total += amount * 100
+            self.harvest = {}
 
-        return sold_items
-
-
-    def check_production(self):
-        """Проверяет производство всех животных"""
-        messages = []
-        for animal in self.animals:
-            if animal.product_count > 0:
-                messages.append(f"{animal.name} произвела {animal.product_count} {animal.product}!")
-        return messages
-
-    def plant_seed(self):
-        messages = []
-        if self.seeds:
-            seed = self.seeds.pop()
-            seed.x, seed.y = self.x, self.y
-            self.plants.append(seed)
-            messages.append(f"{self.name} посадил {seed.name}!")
-        else:
-            messages.append("Нет семян для посадки!")
-        return messages
+        if total > 0:
+            self.money += total
+            return total
+        return 0
 
     def water_plant(self, plant_index):
         if 0 <= plant_index < len(self.plants):
-            message = self.plants[plant_index].water()
-            return message
+            return self.plants[plant_index].water()
         return "Нет растения с таким индексом"
 
     def harvest_plant(self, plant_index):
         if 0 <= plant_index < len(self.plants):
             plant = self.plants[plant_index]
             if plant.is_ripe():
-                self.wheat += 1  # Увеличиваем количество пшеницы
-                self.plants.pop(plant_index)
-                return f"Собрана 1 {plant.name} (Всего: {self.wheat})"
+                crop = plant.harvest()
+                self.harvest[plant.name] = self.harvest.get(plant.name, 0) + crop
+                return f"Собрано {crop} {plant.name} (Всего: {self.harvest[plant.name]})"
             return f"{plant.name} еще не созрела"
         return "Нет растения с таким индексом"
 
     def check_plants_status(self):
         messages = []
-        for i, plant in enumerate(self.plants):
-            status = f"{i}: {plant.name} - "
-            if plant.is_ripe():
-                status += "Готова к сбору (нажми H)"
-           # else:
-           #     status += f"Стадия {plant.stage}/{len(plant.stages_images) - 1}"
-                if not plant.watered:
-                    status += " (Нужен полив - нажми W)"
-            messages.append(status)
-        return messages if messages else ["Нет растений"]
 
+        nearest_plant = None
+        for plant in self.plants:
+            if plant.is_near(self):
+                nearest_plant = plant
+                break
 
+        if nearest_plant:
+            if nearest_plant.is_ripe():
+                messages.append(f"{nearest_plant.name}: Готова к сбору (H)")
+            elif not nearest_plant.watered:
+                messages.append(f"{nearest_plant.name}: Нужен полив (W)")
+            else:
+                messages.append(f"{nearest_plant.name}: Растет (стадия {nearest_plant.stage + 1})")
+        elif self.plants:
+            messages.append("Подойдите ближе к растению")
+        else:
+            messages.append("Нет растений на поле")
 
+        if self.harvest:
+            harvest_info = "Урожай: " + ", ".join(
+                f"{name}: {amount}" for name, amount in self.harvest.items()
+            )
+            messages.append(harvest_info)
+
+        return messages
 
 
 class Plant:
-    def __init__(self, name, growth_time, price, sell_price, image, x, y):
+    def __init__(self, name, growth_time, price, sell_price, images_dict, x, y):
         self.name = name
         self.growth_time = growth_time
         self.age = 0
         self.price = price
         self.sell_price = sell_price
-        self.image = image
+        self.images_dict = images_dict
         self.x = x
         self.y = y
-        self.watered = False  # Полито ли растение сегодня
+        self.watered = False
         self.stage = 0
-    #   self.stages_images = []
+        self.harvest_amount = 1
 
     def grow(self):
         if self.watered:
             self.age += 1
-            self.watered = False  # Сбрасываем статус полива
-            # Обновляем стадию роста
-          # self.stage = min(self.age, len(self.stages_images)-1)
+            self.watered = False
+            max_stage = len(self.images_dict) - 1
+            self.stage = min(self.age, max_stage)
             return True
         return False
 
     def water(self):
         self.watered = True
-        return f"{self.name} полита!"
+        return f"{self.name} полит(а)!"
 
     def is_ripe(self):
-        return self.age >= self.growth_time
+        return self.stage == len(self.images_dict) - 1
 
-    def draw(self, screen):
-        screen.blit(self.image, (self.x, self.y))
-
-   # def draw(self, screen):
-   #     # Рисуем текущую стадию роста
-   #     current_image = self.stages_images[self.stage]
-   #     screen.blit(current_image, (self.x, self.y))
-
-    def sell(self):
+    def harvest(self):
         if self.is_ripe():
-            print(f"{self.name} продан за {self.sell_price}!")
-            return self.sell_price
+            self.age = 0
+            self.stage = 0
+            return self.harvest_amount
         return 0
 
+    def draw(self, screen):
+        screen.blit(self.images_dict[self.stage], (self.x, self.y))
+
+    def is_near(self, farmer, max_dist=60):
+        return ((abs(self.x - farmer.x) < max_dist) and
+                (abs(self.y - farmer.y) < max_dist))
 
 class Animal:
     def __init__(self, name, price, product, product_price, image, x, y):
@@ -207,30 +212,26 @@ class Animal:
         self.pen_boundaries = None
 
     def set_pen_boundaries(self, walls):
-        """Устанавливает границы загона для животного (left, top, right, bottom)"""
         self.pen_boundaries = walls
 
     def setup_production(self):
         if self.name.lower() == "курица":
-            self.production_cycle = randint(1, 3)  # Дни между кладками
+            self.production_cycle = randint(1, 3)
             self.production_amount = randint(1, 3)
         elif self.name.lower() == "корова":
-            self.production_cycle = randint(2, 4)  # Дни между удоями
+            self.production_cycle = randint(2, 4)
             self.production_amount = randint(1, 3)
 
     def update(self, walls):
-        # Движение
         self.move_timer += 1
         if self.move_timer >= self.move_cooldown:
             self.direction = [random() * 2 - 1, random() * 2 - 1]
             self.move_timer = 0
             self.move_cooldown = randint(30, 100)
 
-        # Пытаемся двигаться
         new_x = self.x + self.direction[0] * self.speed
         new_y = self.y + self.direction[1] * self.speed
 
-        # Проверка коллизий со стенами
         animal_rect = pygame.Rect(new_x, new_y, self.image.get_width(), self.image.get_height())
         can_move = True
 
@@ -244,16 +245,12 @@ class Animal:
             self.x = new_x
             self.y = new_y
 
-        if not self.hungry:
-            self.production_timer += 1
-            if self.production_timer >= self.production_cycle:
-                self.produce()
 
     def produce(self):
         self.product_count += self.production_amount
         self.production_timer = 0
         self.setup_production()
-        self.hungry = True  # После производства животное становится голодным
+        self.hungry = True
         print(f"{self.name} произвела {self.product_count} {self.product}!")
 
     def feed(self):
@@ -266,3 +263,12 @@ class Animal:
 
     def draw(self, screen):
         screen.blit(self.image, (self.x, self.y))
+
+    def is_near(self, farmer, radius=50):
+        return abs(self.x - farmer.x) < radius and abs(self.y - farmer.y) < radius
+
+    def next_day(self):
+        if not self.hungry:
+            self.production_timer += 1
+            if self.production_timer >= self.production_cycle:
+                self.produce()

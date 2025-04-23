@@ -35,11 +35,6 @@ class TimeManager:
             for plant in farmer.plants:
                 plant.grow()
             for animal in farmer.animals:
-                animal.hungry = True
+                animal.next_day()
 
-            # Проверяем производство
-            production_messages = farmer.check_production()
-            for msg in production_messages:
-                print(msg)
-
-        self.timer_increment(30, on_timer_end)
+        self.timer_increment(10, on_timer_end)
